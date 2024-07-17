@@ -93,41 +93,62 @@ class BookController {
     //     return books;
     // }
 
+    // public async searchBooks(query: string): Promise<Book[]> {
+    //     const aggregationPipeline = [
+    //         {
+    //             $search: {
+    //                 "index": "fulltextsearch",
+    //                 "compound": {
+    //                     "must": [
+    //                         {
+    //                             "text": {
+    //                                 query,
+    //                                 "path": ["title", "authors.name", "genres"],
+    //                                 fuzzy: {
+    //                                     maxEdits: 2
+    //                                 }
+    //                             }
+    //                         }
+    //                     ],
+    //                     "should": [
+    //                         {
+    //                             "equals": {
+    //                                 "value": true,
+    //                                 "path": "bookOfTheMonth",
+    //                                 "score": {
+    //                                     "boost": { value: 10 }
+    //                                 }
+    //                             }
+    //                         },
+    //                         {
+    //                             "range": {
+    //                                 path: "pages",
+    //                                 lt: 80
+    //                             }
+    //                         }
+    //                     ]
+    //                 }
+    //             }
+    //         },
+    //         {
+    //             $limit: 8
+    //         }
+    //     ];
+    //     const books = await collections?.books?.aggregate(aggregationPipeline).toArray() as Book[];
+    //     return books;
+    // }
+
     public async searchBooks(query: string): Promise<Book[]> {
+        const vector = await getEmbeddings(query);
         const aggregationPipeline = [
             {
-                $search: {
-                    "index": "fulltextsearch",
-                    "compound": {
-                        "must": [
-                            {
-                                "text": {
-                                    query,
-                                    "path": ["title", "authors.name", "genres"],
-                                    fuzzy: {
-                                        maxEdits: 2
-                                    }
-                                }
-                            }
-                        ],
-                        "should": [
-                            {
-                                "equals": {
-                                    "value": true,
-                                    "path": "bookOfTheMonth",
-                                    "score": {
-                                        "boost": { value: 10 }
-                                    }
-                                }
-                            },
-                            {
-                                "range": {
-                                    path: "pages",
-                                    lt: 80
-                                }
-                            }
-                        ]
-                    }
+                $vectorSearch: {
+                    queryVector: vector,
+                    path: 'embeddings',
+                    numCandidates: 100,
+                    index: 'vectorsearch',
+                    limit: 100,
+                    filter: {year: {$eq: 2001}}
                 }
             },
             {
